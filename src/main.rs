@@ -1,5 +1,10 @@
+#![allow(dead_code)]
 
+extern crate funlist;
+
+use funlist::*;
 use std::num;
+
 
 #[derive(Copy, Clone)]
 struct Point {
@@ -80,13 +85,13 @@ fn max_point_from_line(l: Line, u: Point, v: Point) -> (bool, Point) {
 }
 
 
-fn furthest_point_from_line(l: Line, points: Vec<Point>) -> (Point, f32) {
+fn furthest_point_from_line(l: Line, points: List<Point>) -> (Point, f32) {
 	(Point { x: 0., y: 0. }, 0.)
 }
 
 
 fn main() {
-	let mut points: Vec<Point> = vec![];
+	let mut points: List<Point> = List::Nil;
 
 	let p = Point { x: 3., y: 4. };
 	let q = Point { x: 0., y: 0. };
@@ -102,4 +107,8 @@ fn main() {
 	println!("Distance from line to r is {}", line_point_dist(l, r));
 
 	println!("Point r is on {} side of line", line_side_test(l, r));
+
+
+	push();
+	fold();
 }

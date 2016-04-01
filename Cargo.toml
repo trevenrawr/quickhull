@@ -1,12 +1,7 @@
 [package]
-<<<<<<< HEAD
 name = "quickhull"
 version = "0.1.0"
 authors = ["Trevor"]
-=======
-name = "funlist"
-version = "0.1.0"
-authors = ["Matthew Hammer <matthew.hammer@colorado.edu>"]
->>>>>>> e7a1d9678c2c2783828258efbe098782b6147957
 
-[dependencies]
+[dependencies.funlist]
+path = "src/funlist.rs"
