@@ -12,7 +12,7 @@ struct Point {
 	y: f32,
 }
 
-#[derive(Copy, Clone)]
+//#[derive(Copy, Clone)]
 struct Line {
 	u: Point,
 	v: Point,
@@ -54,7 +54,7 @@ fn point_dist(u: Point, v: Point) -> f32 {
 	((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)).sqrt()
 }
 
-fn line_point_dist(l: Line, p: Point) -> f32 {
+fn line_point_dist(l: &Line, p: Point) -> f32 {
 	let d1 = point_subtract(l.v, l.u);
 	let d2 = point_subtract(l.u, p);
 	let d3 = point_subtract(l.v, l.u);
@@ -62,37 +62,56 @@ fn line_point_dist(l: Line, p: Point) -> f32 {
 	((cross_prod(d1, d2)) / magnitude(d3)).abs()
 }
 
-fn line_side_test(l: Line, p: Point) -> bool {
+fn line_side_test(l: &Line, p: Point) -> bool {
 	// Tests which side of the line a point is on
 	if (l.u.x == p.x && l.u.y == p.y) || (l.v.x == p.x && l.v.y == p.y) {
-		return false
+		false
 	} else {
 		let d1 = point_subtract(l.v, l.u);
 		let d2 = point_subtract(l.u, p);
 		let c = cross_prod(d1, d2);
 		if c <= 0.0 {
-			return false
+			false
 		} else {
-			return true
+			true
 		}
 	}
 }
 
-fn max_point_from_line(l: Line, u: Point, v: Point) -> (bool, Point) {
+fn max_point_from_line(l: &Line, u: Point, v: Point) -> (bool, Point) {
 	let d1 = line_point_dist(l, u);
 	let d2 = line_point_dist(l, v);
-	if d1 > d2 { return (true, u) } else { return (false, v) }
+	if d1 > d2 {
+		(true, u)
+	} else {
+		(false, v)
+	}
 }
 
 
-fn furthest_point_from_line(l: Line, points: List<Point>) -> (Point, f32) {
-	(Point { x: 0., y: 0. }, 0.)
+fn furthest_point_from_line(l: &Line, points: List<Point>) -> (Point, f32) {
+	let md = |(q, max_d), &p| -> (Point, f32) {
+		let d = line_point_dist(l, p);
+		if d > max_d {
+			(p, d)
+		} else {
+			(q, max_d)
+		}
+	};
+
+	match points {
+		List::Nil => panic!{"Can't do quickhull on no points! \n
+			(furthest_point_from_line received empty point list)"},
+		List::Cons(ref cons) => fold(&points, (Point{x: 0., y: 0.}, 0.), md)
+	}
 }
 
 
 fn main() {
-	let mut points: List<Point> = List::Nil;
+	let points: List<Point> = List::Nil;
 
+
+	// Testing items:
 	let p = Point { x: 3., y: 4. };
 	let q = Point { x: 0., y: 0. };
 	let l = Line { u: p, v: q };
@@ -104,11 +123,7 @@ fn main() {
 	println!("Cross product of vecors p and q is {}", cross_prod(p, q));
 
 	let r = Point { x: 12., y: -3. };
-	println!("Distance from line to r is {}", line_point_dist(l, r));
+	println!("Distance from line to r is {}", line_point_dist(&l, r));
 
-	println!("Point r is on {} side of line", line_side_test(l, r));
-
-
-	push();
-	fold();
+	println!("Point r is on {} side of line", line_side_test(&l, r));
 }
