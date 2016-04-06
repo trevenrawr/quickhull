@@ -105,6 +105,8 @@ fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point,
   }
 }
 
+
+
 fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Point>) -> List<Point> {
   match *points {
     List::Nil =>
@@ -128,6 +130,34 @@ fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Poin
 
       let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
       quickhull_rec(&l_line, &l_points, push(hull_accum, pivot_point))
+    }
+
+  }
+}
+
+fn quickhull_rec2<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Point>) -> List<Point> {
+  fn filter(points:&List<Point>, test: &Fn(&Point) -> bool) -> List<Point> {
+    // Find points outside l_line
+    fold(points, List::Nil, |outside, p| {
+      if test(p) { push(outside, p.clone()) }
+      else { outside }
+    })
+  };
+  //test = line_side_test(&l_line, &p)  
+  match *points {
+    List::Nil     => hull_accum,
+    List::Cons(_) => {
+      // Find pivot and set up new lines on right and left
+      let (pivot_point, _) = furthest_point_from_line(&l, &points);
+      let l_line = Line { u: l.u.clone(), v: pivot_point.clone() };
+      let r_line = Line { u: pivot_point.clone(), v: l.v.clone() };
+
+      // Find points outside l_line
+      let l_points = filter(&points, &|p|{ line_side_test(&l_line, &p) });
+      let r_points = filter(&points, &|p|{ line_side_test(&r_line, &p) });
+
+      let hull_accum = quickhull_rec2(&r_line, &r_points, hull_accum);
+      quickhull_rec2(&l_line, &l_points, push(hull_accum, pivot_point))
     }
 
   }
