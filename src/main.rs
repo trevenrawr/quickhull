@@ -86,7 +86,7 @@ fn max_point_from_line<'a>(l: &'a Line, u: &'a Point, v: &'a Point) -> (bool, &'
 }
 
 
-fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<&Point>) -> (&'a Point, f32) {
+fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<&'a Point>) -> (&'a Point, f32) {
 	match *points {
 		List::Nil =>
 			panic!{"Can't do quickhull on no points! (furthest_point_from_line received empty point list)"},
@@ -118,21 +118,24 @@ fn quickhull_rec<'a>(l: &'a Line, points: &'a List<&'a Point>, hull_accum: List<
 			let l_points = fold(&points, List::Nil, |outside, p| {
 				if line_side_test(&l_line, &p) {
 					let outside = push(outside, *p);
+					outside
+				} else {
+					outside
 				}
-				outside
 			});
 			// Find points outside r_line
 			let r_points = fold(&points, List::Nil, |outside, p| {
 				if line_side_test(&r_line, &p) {
 					let outside = push(outside, *p);
+					outside
+				} else {
+					outside
 				}
-				outside
 			});
 
 			let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
 			quickhull_rec(&l_line, &l_points, push(hull_accum, pivot_point))
 		}
-
 	}
 }
 
