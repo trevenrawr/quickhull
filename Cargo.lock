@@ -2,11 +2,10 @@
 name = "quickhull"
 version = "0.1.0"
 dependencies = [
- "funlist 0.1.0 (git+https://github.com/cuplv/funlist.rs)",
+ "funlist 0.1.0",
 ]
 
 [[package]]
 name = "funlist"
 version = "0.1.0"
-source = "git+https://github.com/cuplv/funlist.rs#e088b8c844164ae63043e21e23e37f30362614ff"
 

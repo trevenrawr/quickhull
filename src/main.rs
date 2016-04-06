@@ -5,7 +5,7 @@ extern crate funlist;
 use funlist::*;
 //use std::num;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct Point {
 	x: f32,
 	y: f32,
@@ -17,20 +17,6 @@ struct Line {
 	v: Point,
 }
 
-
-// Point comparison functions
-fn x_max<'a>(u: &'a Point, v: &'a Point) -> &'a Point {
-	if u.x > v.x { return u; } else { return v;	}
-}
-fn y_max<'a>(u: &'a Point, v: &'a Point) -> &'a Point {
-	if u.y > v.y { return u; } else { return v;	}
-}
-fn x_min<'a>(u: &'a Point, v: &'a Point) -> &'a Point {
-	if u.x < v.x { return u; } else { return v;	}
-}
-fn y_min<'a>(u: &'a Point, v: &'a Point) -> &'a Point {
-	if u.y < v.y { return u; } else { return v;	}
-}
 
 // Point operation functions
 fn point_subtract<'a>(u: &'a Point, v: &'a Point) -> Point {
@@ -63,7 +49,7 @@ fn line_point_dist(l: &Line, p: &Point) -> f32 {
 
 fn line_side_test(l: &Line, p: &Point) -> bool {
 	// Tests which side of the line a point is on
-	if (l.u.x == p.x && l.u.y == p.y) || (l.v.x == p.x && l.v.y == p.y) {
+	if (l.u == *p) || (l.v == *p) {
 		false
 	} else {
 		let d1 = point_subtract(&l.v, &l.u);
@@ -105,44 +91,7 @@ fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point,
 }
 
 
-
 fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Point>) -> List<Point> {
-  match *points {
-    List::Nil =>
-      hull_accum,
-    List::Cons(_) => {
-      // Find pivot and set up new lines on right and left
-      let (pivot_point, _) = furthest_point_from_line(&l, &points);
-      let l_line = Line { u: l.u.clone(), v: pivot_point.clone() };
-      let r_line = Line { u: pivot_point.clone(), v: l.v.clone() };
-
-      // Find points outside l_line
-      let l_points = fold(&points, List::Nil, |outside, p| {
-	if line_side_test(&l_line, &p) { push(outside, p.clone()) }
-        else { outside }
-      });
-      // Find points outside r_line
-      let r_points = fold(&points, List::Nil, |outside, p| {
-	if line_side_test(&r_line, &p) { push(outside, p.clone()) }
-        else { outside }
-      });
-
-      let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
-      quickhull_rec(&l_line, &l_points, push(hull_accum, pivot_point))
-    }
-
-  }
-}
-
-fn quickhull_rec2<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Point>) -> List<Point> {
-  fn filter(points:&List<Point>, test: &Fn(&Point) -> bool) -> List<Point> {
-    // Find points outside l_line
-    fold(points, List::Nil, |outside, p| {
-      if test(p) { push(outside, p.clone()) }
-      else { outside }
-    })
-  };
-  //test = line_side_test(&l_line, &p)  
   match *points {
     List::Nil     => hull_accum,
     List::Cons(_) => {
@@ -151,15 +100,36 @@ fn quickhull_rec2<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Poi
       let l_line = Line { u: l.u.clone(), v: pivot_point.clone() };
       let r_line = Line { u: pivot_point.clone(), v: l.v.clone() };
 
-      // Find points outside l_line
-      let l_points = filter(&points, &|p|{ line_side_test(&l_line, &p) });
-      let r_points = filter(&points, &|p|{ line_side_test(&r_line, &p) });
+      // Find points outside l_line and r_line
+      let l_points = filter(&points, |p|{ line_side_test(&l_line, &p) });
+      let r_points = filter(&points, |p|{ line_side_test(&r_line, &p) });
 
-      let hull_accum = quickhull_rec2(&r_line, &r_points, hull_accum);
-      quickhull_rec2(&l_line, &l_points, push(hull_accum, pivot_point))
+      let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
+      quickhull_rec(&l_line, &l_points, push(hull_accum, pivot_point))
     }
-
   }
+}
+
+fn quickhull<'a>(points: &'a List<Point>) -> List<Point> {
+  let most_left = fold(&points, Point { x: 0., y: 0. }, |p, q| {
+    if p.x < q.x { p } else { q.clone() }
+  });
+  let most_right = fold(&points, Point { x: 0., y: 0. }, |p, q| {
+    if p.x > q.x { p } else { q.clone() }
+  });
+
+  let t_line = Line { u: most_left.clone(), v: most_right.clone() };
+  let b_line = Line { u: most_right.clone(), v: most_left.clone() };
+
+  let t_points = filter(&points, |p|{ line_side_test(&t_line, &p) });
+  let b_points = filter(&points, |p|{ line_side_test(&b_line, &p) });
+
+  let hull = push(List::Nil, most_left);
+  let hull = push(hull, most_right);
+  let hull = quickhull_rec(&t_line, &t_points, hull);
+  let hull = quickhull_rec(&b_line, &b_points, hull);
+
+  hull
 }
 
 #[test]
@@ -187,6 +157,26 @@ fn test() {
   let (pt, dist) = furthest_point_from_line(&l, &points);
   
   println!("Furthest point from line l is ({}, {}), at dist = {}.", pt.x, pt.y, dist)
+}
+
+#[test]
+fn test_qh() {
+  let points = List::Nil;
+  let points = push(points, Point { x: 0., y: 0. });
+  let points = push(points, Point { x: 1., y: 0. });
+  let points = push(points, Point { x: 0., y: 1. });
+  let points = push(points, Point { x: -1., y: 0. });
+  let points = push(points, Point { x: 0., y: -1. });
+
+  let ans = List::Nil;
+  let ans = push(ans, Point { x: 1., y: 0. });
+  let ans = push(ans, Point { x: 0., y: 1. });
+  let ans = push(ans, Point { x: -1., y: 0. });
+  let ans = push(ans, Point { x: 0., y: -1. });
+
+  let points = quickhull(&points);
+
+  assert!(compare(&points, &ans));
 }
 
 

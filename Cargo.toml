@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["Trevor"]
 
 [dependencies.funlist]
-git = "https://github.com/cuplv/funlist.rs"
+#git = "https://github.com/cuplv/funlist.rs"
+path = "src/funlist.rs/"
