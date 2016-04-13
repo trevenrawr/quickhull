@@ -90,8 +90,12 @@ fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point,
   }
 }
 
+enum Shape {
+  Point(Point),
+  Line(Line),
+}
 
-fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Point>) -> List<Point> {
+fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Shape>) -> List<Shape> {
   match *points {
     List::Nil     => hull_accum,
     List::Cons(_) => {
@@ -104,13 +108,24 @@ fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Poin
       let l_points = filter(&points, |p|{ line_side_test(&l_line, &p) });
       let r_points = filter(&points, |p|{ line_side_test(&r_line, &p) });
 
+      let hull_accum = push(hull_accum,  Shape::Line(r_line.clone()));
       let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
-      quickhull_rec(&l_line, &l_points, push(hull_accum, pivot_point))
+      let hull_accum = push(hull_accum, Shape::Point(pivot_point.clone()));
+      let hull_accum = push(hull_accum,  Shape::Line(l_line.clone()));
+      quickhull_rec(&l_line, &l_points, hull_accum)
     }
   }
 }
 
-fn quickhull<'a>(points: &'a List<Point>) -> List<Point> {
+// TODO: Use this to time quickhull:
+// pub fn measure_ns<F:FnOnce()>(f: F) -> u64 {
+//   let start = time::precise_time_ns();
+//   f();
+//   let end = time::precise_time_ns();
+//   end - start
+// }
+
+fn quickhull<'a>(points: &'a List<Point>) -> List<Shape> {
   let most_left = fold(&points, Point { x: 0., y: 0. }, |p, q| {
     if p.x < q.x { p } else { q.clone() }
   });
@@ -124,8 +139,9 @@ fn quickhull<'a>(points: &'a List<Point>) -> List<Point> {
   let t_points = filter(&points, |p|{ line_side_test(&t_line, &p) });
   let b_points = filter(&points, |p|{ line_side_test(&b_line, &p) });
 
-  let hull = push(List::Nil, most_left);
-  let hull = push(hull, most_right);
+  let hull = push(List::Nil, Shape::Point(most_left));
+  let hull = push(hull, Shape::Point(most_right));
+  let hull = push(hull, Shape::Line(t_line.clone()));
   let hull = quickhull_rec(&t_line, &t_points, hull);
   let hull = quickhull_rec(&b_line, &b_points, hull);
 
