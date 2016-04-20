@@ -1,15 +1,13 @@
 #![allow(dead_code)]
 
-//extern crate funlist;
-
-extern crate adapton;
-
 use std::rc::Rc;  
 
-//use funlist::*;
+#[macro_use]
+extern crate adapton;
+
 use adapton::collections::*;
 use adapton::engine::*;
-//use std::num;
+use adapton::macros::*;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 struct Point {
@@ -121,7 +119,7 @@ fn quickhull_rec
   , T:TreeIntro<Lev,Point>+TreeElim<Lev,Point>+'static
   , L:ListIntro<Shape>+'static
   >
-  (l: Line, points:T, hull:L) -> L
+  (n:Name, l: Line, points:T, hull:L) -> L
 {
   if T::is_empty(&points) { hull }
   else {
@@ -141,14 +139,27 @@ fn quickhull_rec
          ||filter_tree_of_tree::<_,_,_,T>
          (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
 
-    //let hull = L::cons(Shape::Line(r_line.clone()), hull);    
-    let hull = ns(name_of_str("qh-r"), ||quickhull_rec(r_line, r_points, hull));
+    let (nr, nl) = name_fork(n);    
+    let hull = L::cons(Shape::Line(r_line.clone()), hull);
+    let hull = ns(nr.clone(), ||(quickhull_rec_2(nr, r_line, r_points, hull)));
     let hull = L::cons(Shape::Point(pivot.clone()), hull);
-    //let hull = L::cons(Shape::Line(l_line.clone()), hull);
-    ns(name_of_str("qh-l"), ||quickhull_rec(l_line, l_points, hull))
-  }  
+    let hull = L::cons(Shape::Line(l_line.clone()), hull);
+    let hull = ns(nl.clone(), ||quickhull_rec_2(nl, l_line, l_points, hull));
+    hull
+  }
 }
 
+fn quickhull_rec_2
+  < Lev:Level+'static
+  , T:TreeIntro<Lev,Point>+TreeElim<Lev,Point>+'static
+  , L:ListIntro<Shape>+'static
+  >
+  (n:Name, l: Line, points:T, hull:L) -> L
+{
+  let (c, _) = eager!(n.clone() =>>
+                      quickhull_rec, n:n, l:l, points:points, hull:hull);
+  L::art(c)
+}
 
 // fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Shape>) -> List<Shape> {
 //   match *points {
@@ -187,7 +198,6 @@ fn quickhull
   >
   (points:T) -> L
 {
-//fn quickhull<'a>(points: &'a <Point>) -> List<Shape> {
   let most_left =
     ns(name_of_str("most-left"),
        ||monoid_of_tree
@@ -219,14 +229,14 @@ fn quickhull
     ns(name_of_str("b-points"),
        || filter_tree_of_tree::<_,_,_,T>
        (points.clone(), Box::new(move |p| line_side_test(&b_line2, &p) )));
+
+  let (nt,nb) = name_fork(name_of_str("rec"));
   
   let hull = L::cons(Shape::Point(most_left), L::nil());  
-  let hull = ns(name_of_str("qh-lower"),
-                ||quickhull_rec(b_line, b_points, hull));  
+  let hull = ns(nb.clone(),||quickhull_rec_2(nb, b_line, b_points, hull));
 
   let hull = L::cons(Shape::Point(most_right), hull);
-  let hull = ns(name_of_str("qh-upper"),
-                ||quickhull_rec(t_line, t_points, hull));
+  let hull = ns(nt.clone(),||quickhull_rec_2(nt, t_line, t_points, hull));
   hull
 }
 
@@ -282,27 +292,33 @@ pub fn test_qh () {
   fn doit() -> Vec<NameElse<Shape>> {
     let l = list_of_vec::<Point,List<_>>(
       &vec![
-        NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}),
-        NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}),
-        NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}),
-        NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}),
+        NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}), // inside hull
+        NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}), // inside hull
+        NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}), // inside hull
+        NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}), // inside hull
         
         NameElse::Name(name_of_usize(4)),  NameElse::Else(Point{x: 6,y: 6}), // on hull
         NameElse::Name(name_of_usize(5)),  NameElse::Else(Point{x: 6,y:-6}), // on hull
         NameElse::Name(name_of_usize(6)),  NameElse::Else(Point{x:-6,y:-6}), // on hull
         NameElse::Name(name_of_usize(7)),  NameElse::Else(Point{x:-6,y: 6}), // on hull
 
-        NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x:1,y:1}),
-        NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x:3,y:0}),
-        NameElse::Name(name_of_usize(10)), NameElse::Else(Point{x:0,y:3}),
-        NameElse::Name(name_of_usize(11)), NameElse::Else(Point{x:5,y:3}),
-        NameElse::Name(name_of_usize(12)), NameElse::Else(Point{x:5,y:5}),
+        NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x:1,y:1}), // inside hull
+        NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x:3,y:0}), // inside hull
+        NameElse::Name(name_of_usize(10)), NameElse::Else(Point{x:0,y:3}), // inside hull
+        NameElse::Name(name_of_usize(11)), NameElse::Else(Point{x:5,y:3}), // inside hull
+        NameElse::Name(name_of_usize(12)), NameElse::Else(Point{x:5,y:5}), // inside hull
         
         NameElse::Name(name_of_usize(13)), NameElse::Else(Point{x:10,y:0}),  // on hull
         NameElse::Name(name_of_usize(14)), NameElse::Else(Point{x:0,y:10}),  // on hull
         NameElse::Name(name_of_usize(15)), NameElse::Else(Point{x:-10,y:0}), // on hull
         NameElse::Name(name_of_usize(16)), NameElse::Else(Point{x:0,y:-10}), // on hull
-        NameElse::Name(name_of_usize(17)),
+
+        NameElse::Name(name_of_usize(17)), NameElse::Else(Point{x:10,y:2}),  // on hull ?
+        NameElse::Name(name_of_usize(18)), NameElse::Else(Point{x:2,y:10}),  // on hull ?
+        NameElse::Name(name_of_usize(19)), NameElse::Else(Point{x:-10,y:2}), // on hull ?
+        NameElse::Name(name_of_usize(20)), NameElse::Else(Point{x:2,y:-10}), // on hull ?
+
+        NameElse::Name(name_of_usize(21)),
         ]);
     let t = ns(name_of_str("tree_of_list"),
                ||tree_of_list::<_,_,Tree<_>,_>(Dir2::Right, l));
