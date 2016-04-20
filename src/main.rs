@@ -188,35 +188,44 @@ fn quickhull
   (points:T) -> L
 {
 //fn quickhull<'a>(points: &'a <Point>) -> List<Shape> {
-  let most_left = monoid_of_tree
-    (points.clone(),
-     Point {x:isize::max_value(), y:0},
-     Rc::new(
-       |p:Point, q:Point| { if p.x < q.x { p } else { q.clone() } }));
+  let most_left =
+    ns(name_of_str("most-left"),
+       ||monoid_of_tree
+       (points.clone(),
+        Point {x:isize::max_value(), y:0},
+        Rc::new(
+          |p:Point, q:Point| { if p.x < q.x { p } else { q.clone() } })));
 
-  let most_right = monoid_of_tree
-    (points.clone(),
-     Point {x:-isize::max_value(), y:0},
-     Rc::new(
-       |p:Point, q:Point| { if p.x > q.x { p } else { q.clone() } }));
-
+  let most_right =
+    ns(name_of_str("most-right"),
+       ||monoid_of_tree
+       (points.clone(),
+        Point {x:-isize::max_value(), y:0},
+        Rc::new(
+          |p:Point, q:Point| { if p.x > q.x { p } else { q.clone() } })));
+       
  
   let t_line = Line { u: most_left.clone(), v: most_right.clone() };
   let b_line = Line { u: most_right.clone(), v: most_left.clone() };
 
   let t_line2 = t_line.clone();
-  let t_points = filter_tree_of_tree::<_,_,_,T>
-      (points.clone(), Box::new(move |p| line_side_test(&t_line2, &p) ));
-
+  let t_points =
+    ns(name_of_str("t-points"),
+       || filter_tree_of_tree::<_,_,_,T>
+       (points.clone(), Box::new(move |p| line_side_test(&t_line2, &p) )));
+  
   let b_line2 = b_line.clone();
-  let b_points = filter_tree_of_tree::<_,_,_,T>
-      (points.clone(), Box::new(move |p| line_side_test(&b_line2, &p) ));
-
+  let b_points =
+    ns(name_of_str("b-points"),
+       || filter_tree_of_tree::<_,_,_,T>
+       (points.clone(), Box::new(move |p| line_side_test(&b_line2, &p) )));
+  
   let hull = L::cons(Shape::Point(most_left), L::nil());  
-  let hull = ns(name_of_str("qh_lower"),
+  let hull = ns(name_of_str("qh-lower"),
                 ||quickhull_rec(b_line, b_points, hull));  
+
   let hull = L::cons(Shape::Point(most_right), hull);
-  let hull = ns(name_of_str("qh_upper"),
+  let hull = ns(name_of_str("qh-upper"),
                 ||quickhull_rec(t_line, t_points, hull));
   hull
 }
@@ -308,10 +317,10 @@ pub fn test_qh () {
   init_naive();
   println!("Naive run");
   let o1 = doit();
-  //init_dcg();
-  //println!("DCG run");
-  //let o2 = doit();
-  //assert_eq!(o1, o2);
+  init_dcg();
+  println!("DCG run");
+  let o2 = doit();
+  assert_eq!(o1, o2);
 }
 
 
