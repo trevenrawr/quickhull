@@ -282,30 +282,28 @@ pub fn test_qh () {
   fn doit() -> Vec<NameElse<Shape>> {
     let l = list_of_vec::<Point,List<_>>(
       &vec![
-        NameElse::Name(name_of_usize(0)),
-        NameElse::Else(Point{x:0,y:0}),
-        NameElse::Name(name_of_usize(1)),
-        NameElse::Else(Point{x:6,y:0}),
-        NameElse::Name(name_of_usize(2)),
-        NameElse::Else(Point{x:0,y:6}),
-        NameElse::Name(name_of_usize(3)),
-        NameElse::Else(Point{x:4,y:0}),
-        NameElse::Name(name_of_usize(4)),        
-        NameElse::Else(Point{x:6,y:6}),
+        NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}),
+        NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}),
+        NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}),
+        NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}),
         
-        NameElse::Name(name_of_usize(5)),
-        NameElse::Else(Point{x:10,y:0}),
-        NameElse::Name(name_of_usize(6)),
-        NameElse::Else(Point{x:0,y:10}),
-        NameElse::Name(name_of_usize(7)),
-        NameElse::Else(Point{x:-10,y:0}),
-        NameElse::Name(name_of_usize(8)),
-        NameElse::Else(Point{x:0,y:-10}),
-        NameElse::Name(name_of_usize(9)),
+        NameElse::Name(name_of_usize(4)),  NameElse::Else(Point{x: 6,y: 6}), // on hull
+        NameElse::Name(name_of_usize(5)),  NameElse::Else(Point{x: 6,y:-6}), // on hull
+        NameElse::Name(name_of_usize(6)),  NameElse::Else(Point{x:-6,y:-6}), // on hull
+        NameElse::Name(name_of_usize(7)),  NameElse::Else(Point{x:-6,y: 6}), // on hull
+
+        NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x:1,y:1}),
+        NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x:3,y:0}),
+        NameElse::Name(name_of_usize(10)), NameElse::Else(Point{x:0,y:3}),
+        NameElse::Name(name_of_usize(11)), NameElse::Else(Point{x:5,y:3}),
+        NameElse::Name(name_of_usize(12)), NameElse::Else(Point{x:5,y:5}),
+        
+        NameElse::Name(name_of_usize(13)), NameElse::Else(Point{x:10,y:0}),  // on hull
+        NameElse::Name(name_of_usize(14)), NameElse::Else(Point{x:0,y:10}),  // on hull
+        NameElse::Name(name_of_usize(15)), NameElse::Else(Point{x:-10,y:0}), // on hull
+        NameElse::Name(name_of_usize(16)), NameElse::Else(Point{x:0,y:-10}), // on hull
+        NameElse::Name(name_of_usize(17)),
         ]);
-    let i = vec_of_list(l.clone(), None);
-    //println!("{:?}", i);
-    //println!("{:?}", l);
     let t = ns(name_of_str("tree_of_list"),
                ||tree_of_list::<_,_,Tree<_>,_>(Dir2::Right, l));
     let h = ns(name_of_str("quickhull"),
