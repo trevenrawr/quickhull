@@ -102,7 +102,7 @@ fn quickhull_rec
   , T:TreeIntro<Lev,Point>+TreeElim<Lev,Point>+'static
   , L:ListIntro<Shape>+'static
   >
-  (n:Name, l: Line, points:T, hull:L) -> L
+  (l: Line, points:T, hull:L) -> L
 {
   if T::is_empty(&points) { hull }
   else {
@@ -125,13 +125,13 @@ fn quickhull_rec
          ||filter_tree_of_tree::<_,_,_,T>
          (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
     
-    let (nr, nl) = name_fork(n);
+    let (nr, nl) = name_fork(name_unit());
     //let hull = L::cons(Shape::Line(r_line.clone()), hull);
-    let hull = ns(nr.clone(), ||(quickhull_rec_2(nr, r_line, r_points, hull)));
+    let hull = ns(nr.clone(), ||(quickhull_rec_2(r_line, r_points, hull)));
     let hull = L::cons(Shape::Point(mid.clone()), hull);
     let hull = L::name(nl.clone(), hull);
     //let hull = L::cons(Shape::Line(l_line.clone()), hull);
-    let hull = ns(nl.clone(), ||quickhull_rec_2(nl, l_line, l_points, hull));
+    let hull = ns(nl.clone(), ||quickhull_rec_2(l_line, l_points, hull));
     hull
   }
 }
@@ -141,12 +141,12 @@ fn quickhull_rec_2
   , T:TreeIntro<Lev,Point>+TreeElim<Lev,Point>+'static
   , L:ListIntro<Shape>+'static
   >
-  (n:Name, l: Line, points:T, hull:L) -> L
+  (l: Line, points:T, hull:L) -> L
 {
   // This macro `eager!` memo-izes the call to quickhull_rec.
   // It places the call and its result in an articulation named `n`.
-  let (c, _) = eager!(n.clone() =>>
-                      quickhull_rec, n:n.clone(), l:l, points:points, hull:hull);
+  let (c, _) = eager!(name_unit() =>>
+                      quickhull_rec, l:l, points:points, hull:hull);
   L::art(c)
 }
 
@@ -183,8 +183,6 @@ fn quickhull
  
   let t_line = Line { u: most_left.clone(), v: most_right.clone() };
   let b_line = Line { u: most_right.clone(), v: most_left.clone() };
-
-  println!("t_line = {:?}", t_line);
   
   let t_line2 = t_line.clone();
   let t_points =
@@ -203,57 +201,58 @@ fn quickhull
   let hull = L::cons(Shape::Point(most_left), L::nil());
   let hull = L::art(cell(nb.clone(), hull));
   let hull = L::name(nb.clone(), hull);
-  let hull = ns(nb.clone(),||quickhull_rec_2(nb, b_line, b_points, hull));
+  let hull = ns(nb.clone(),||quickhull_rec_2(b_line, b_points, hull));
 
   let hull = L::cons(Shape::Point(most_right), hull);
   let hull = L::art(cell(nt.clone(), hull));
   let hull = L::name(nt.clone(), hull);
-  let hull = ns(nt.clone(),||quickhull_rec_2(nt, t_line, t_points, hull));
+  let hull = ns(nt.clone(),||quickhull_rec_2(t_line, t_points, hull));
   hull
 }
 
 fn test_input() -> List<Point> {
   list_of_vec::<Point,List<_>>( &vec![
-    NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}), // inside
-    NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}), // inside
-    NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}), // inside
-    NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}), // inside
+    // NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}), // inside
+    // NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}), // inside
+    // NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}), // inside
+    // NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}), // inside
     
+    
+    // NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x: 5,y: 5}), // inside
+    // NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x: 5,y:-5}), // inside
+    // NameElse::Name(name_of_usize(10)),  NameElse::Else(Point{x:-5,y:-5}), // inside
+    // NameElse::Name(name_of_usize(11)),  NameElse::Else(Point{x:-5,y: 5}), // inside
+    
+    // NameElse::Name(name_of_usize(12)),  NameElse::Else(Point{x: 4,y: 4}), // inside
+    // NameElse::Name(name_of_usize(13)),  NameElse::Else(Point{x: 4,y:-4}), // inside
+    // NameElse::Name(name_of_usize(14)),  NameElse::Else(Point{x:-4,y:-4}), // inside
+    // NameElse::Name(name_of_usize(15)),  NameElse::Else(Point{x:-4,y: 4}), // inside
+    
+    // NameElse::Name(name_of_usize(16)),  NameElse::Else(Point{x: 3,y: 3}), // inside
+    // NameElse::Name(name_of_usize(17)),  NameElse::Else(Point{x: 3,y:-3}), // inside
+    // NameElse::Name(name_of_usize(18)),  NameElse::Else(Point{x:-3,y:-3}), // inside
+    // NameElse::Name(name_of_usize(19)),  NameElse::Else(Point{x:-3,y: 3}), // inside
+    
+    // NameElse::Name(name_of_usize(20)),  NameElse::Else(Point{x:1,y:1}), // inside
+    // NameElse::Name(name_of_usize(21)),  NameElse::Else(Point{x:3,y:0}), // inside
+    // NameElse::Name(name_of_usize(22)), NameElse::Else(Point{x:0,y:3}), // inside
+    // NameElse::Name(name_of_usize(23)), NameElse::Else(Point{x:5,y:3}), // inside
+    // NameElse::Name(name_of_usize(24)), NameElse::Else(Point{x:5,y:5}), // inside
+
     NameElse::Name(name_of_usize(4)),  NameElse::Else(Point{x: 6,y: 6}), // on hull
     NameElse::Name(name_of_usize(5)),  NameElse::Else(Point{x: 6,y:-6}), // on hull
     NameElse::Name(name_of_usize(6)),  NameElse::Else(Point{x:-6,y:-6}), // on hull
     NameElse::Name(name_of_usize(7)),  NameElse::Else(Point{x:-6,y: 6}), // on hull
-    
-    NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x: 5,y: 5}), // inside
-    NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x: 5,y:-5}), // inside
-    NameElse::Name(name_of_usize(10)),  NameElse::Else(Point{x:-5,y:-5}), // inside
-    NameElse::Name(name_of_usize(11)),  NameElse::Else(Point{x:-5,y: 5}), // inside
-    
-    NameElse::Name(name_of_usize(12)),  NameElse::Else(Point{x: 4,y: 4}), // inside
-    NameElse::Name(name_of_usize(13)),  NameElse::Else(Point{x: 4,y:-4}), // inside
-    NameElse::Name(name_of_usize(14)),  NameElse::Else(Point{x:-4,y:-4}), // inside
-    NameElse::Name(name_of_usize(15)),  NameElse::Else(Point{x:-4,y: 4}), // inside
-    
-    NameElse::Name(name_of_usize(16)),  NameElse::Else(Point{x: 3,y: 3}), // inside
-    NameElse::Name(name_of_usize(17)),  NameElse::Else(Point{x: 3,y:-3}), // inside
-    NameElse::Name(name_of_usize(18)),  NameElse::Else(Point{x:-3,y:-3}), // inside
-    NameElse::Name(name_of_usize(19)),  NameElse::Else(Point{x:-3,y: 3}), // inside
-    
-    NameElse::Name(name_of_usize(20)),  NameElse::Else(Point{x:1,y:1}), // inside
-    NameElse::Name(name_of_usize(21)),  NameElse::Else(Point{x:3,y:0}), // inside
-    NameElse::Name(name_of_usize(22)), NameElse::Else(Point{x:0,y:3}), // inside
-    NameElse::Name(name_of_usize(23)), NameElse::Else(Point{x:5,y:3}), // inside
-    NameElse::Name(name_of_usize(24)), NameElse::Else(Point{x:5,y:5}), // inside
     
     NameElse::Name(name_of_usize(25)), NameElse::Else(Point{x:10,y:0}),  // on hull
     NameElse::Name(name_of_usize(26)), NameElse::Else(Point{x:0,y:10}),  // on hull
     NameElse::Name(name_of_usize(27)), NameElse::Else(Point{x:-10,y:0}), // on hull
     NameElse::Name(name_of_usize(28)), NameElse::Else(Point{x:0,y:-10}), // on hull
     
-    NameElse::Name(name_of_usize(29)), NameElse::Else(Point{x:10,y:2}),  // on hull
-    NameElse::Name(name_of_usize(30)), NameElse::Else(Point{x:2,y:10}),  // on hull
-    NameElse::Name(name_of_usize(31)), NameElse::Else(Point{x:-10,y:2}), // on hull
-    NameElse::Name(name_of_usize(32)), NameElse::Else(Point{x:2,y:-10}), // on hull
+    // NameElse::Name(name_of_usize(29)), NameElse::Else(Point{x:10,y:2}),  // on hull
+    // NameElse::Name(name_of_usize(30)), NameElse::Else(Point{x:2,y:10}),  // on hull
+    // NameElse::Name(name_of_usize(31)), NameElse::Else(Point{x:-10,y:2}), // on hull
+    // NameElse::Name(name_of_usize(32)), NameElse::Else(Point{x:2,y:-10}), // on hull
     
     NameElse::Name(name_of_usize(33)),
     ])
@@ -284,24 +283,22 @@ pub fn test_qh () {
 pub fn test_qh_inc () {
   
   fn push_point(l:List<Point>) -> List<Point> {
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x: 20,y:20},  l); // new hull
-    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(222), l); // 
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:20},  l); // new hull
-    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(333), l); // 
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:20,y:-20},  l); // new hull
+    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x: 20,y:20},  l); // new hull
+    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(222), l); // 
+    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:20},  l); // new hull
+    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(333), l); // 
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:0,y:0},  l); // new hull
     let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(444), l); // 
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:-20}, l); // new hull
-    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(555), l); // 
+    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:-20}, l); // new hull
+    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(555), l); // 
     l
   };
   
   fn doit(l:List<Point>) -> Vec<NameElse<Shape>> {
-    //let h = inner(|| {
-      let t = ns(name_of_str("tree_of_list"),
-                 ||tree_of_list::<_,_,Tree<_>,_>(Dir2::Right, l));
-      let h = ns(name_of_str("quickhull"),
-                 ||quickhull::<_,_,List<_>>(t.clone()));
-    //})
+    let t = ns(name_of_str("tree_of_list"),
+               ||tree_of_list::<_,_,Tree<_>,_>(Dir2::Right, l));
+    let h = ns(name_of_str("quickhull"),
+               ||quickhull::<_,_,List<_>>(t.clone()));
     let o = vec_of_list(h, None);
     println!("hull = {:?}\n", &o);
     o

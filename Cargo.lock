@@ -8,7 +8,7 @@ dependencies = [
 [[package]]
 name = "adapton"
 version = "0.2.4"
-source = "git+https://github.com/cuplv/adapton.rust?branch=dev#1803a9eec686d5af32fa99d1db6cfde89cfe76e3"
+source = "git+https://github.com/cuplv/adapton.rust?branch=dev#1ed46110071ca13f70423859d08900c13a1efd70"
 dependencies = [
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
