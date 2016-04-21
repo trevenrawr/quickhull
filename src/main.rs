@@ -104,24 +104,31 @@ fn quickhull_rec
 {
   if T::is_empty(&points) { hull }
   else {
-    let mid =
-      ns(name_of_str("find-mid"),
-         || furthest_point_from_line(l.clone(), points.clone()));
-    
-    let l_line = Line { u: l.u.clone(), v: mid.clone() };
-    let r_line = Line { u: mid.clone(), v: l.v.clone() };
-    
-    let l_line2 = l_line.clone();
-    let l_points =
-      ns(name_of_str("filter-l"),
-         ||filter_tree_of_tree::<_,_,_,T>
-         (points.clone(), Box::new(move |p| line_side_test(&l_line2, &p) )));
-    
-    let r_line2 = r_line.clone();
-    let r_points =
-      ns(name_of_str("filter-r"),
-         ||filter_tree_of_tree::<_,_,_,T>
-         (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
+    // TODO name of line l
+    let (l_line, l_points, mid, r_line, r_points) = ns(name_of_usize(0), || {
+      let mid =
+        ns(name_of_str("find-mid"),
+           || furthest_point_from_line(l.clone(), points.clone()));
+      
+      let l_line = Line { u: l.u.clone(), v: mid.clone() };
+      let r_line = Line { u: mid.clone(), v: l.v.clone() };
+      
+      let l_line2 = l_line.clone();
+      let l_points =
+        ns(name_of_str("filter-l"),
+           ||filter_tree_of_tree::<_,_,_,T>
+           (points.clone(), Box::new(move |p| line_side_test(&l_line2, &p) )));
+      
+      let r_line2 = r_line.clone();
+      let r_points =
+        ns(name_of_str("filter-r"),
+           ||filter_tree_of_tree::<_,_,_,T>
+           (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
+
+      (l_line, l_points,
+       mid,
+       r_line, r_points)
+    });
 
     let (nr, nl) = name_fork(n);
     //let hull = L::cons(Shape::Line(r_line.clone()), hull);
@@ -182,15 +189,17 @@ fn quickhull
   let t_line = Line { u: most_left.clone(), v: most_right.clone() };
   let b_line = Line { u: most_right.clone(), v: most_left.clone() };
 
+  println!("t_line = {:?}", t_line);
+  
   let t_line2 = t_line.clone();
   let t_points =
-    ns(name_of_str("t-points"),
+    ns(name_pair(name_of_str("t-points"), name_of_usize(0)), // TODO name of t_line2
        || filter_tree_of_tree::<_,_,_,T>
        (points.clone(), Box::new(move |p| line_side_test(&t_line2, &p) )));
   
   let b_line2 = b_line.clone();
   let b_points =
-    ns(name_of_str("b-points"),
+    ns(name_pair(name_of_str("b-points"), name_of_usize(0)), // TODO name of b_line2
        || filter_tree_of_tree::<_,_,_,T>
        (points.clone(), Box::new(move |p| line_side_test(&b_line2, &p) )));
 
@@ -280,8 +289,14 @@ pub fn test_qh () {
 pub fn test_qh_inc () {
   
   fn push_point(l:List<Point>) -> List<Point> {
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:20,y:20}, l);   // on hull !!
-    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(666), l); // UNIQUE NAME!
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x: 20,y:20},  l); // new hull
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(222), l); // 
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:20},  l); // new hull
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(333), l); // 
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:20,y:-20},  l); // new hull
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(444), l); // 
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:-20}, l); // new hull
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(555), l); // 
     l
   };
   
