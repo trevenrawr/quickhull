@@ -141,6 +141,8 @@ fn quickhull_rec_2
   >
   (n:Name, l: Line, points:T, hull:L) -> L
 {
+  // This macro `eager!` memo-izes the call to quickhull_rec.
+  // It places the call and its result in an articulation named `n`.
   let (c, _) = eager!(n.clone() =>>
                       quickhull_rec, n:n.clone(), l:l, points:points, hull:hull);
   L::art(c)
@@ -176,7 +178,6 @@ fn quickhull
         Point {x:-isize::max_value(), y:0},
         Rc::new(
           |p:Point, q:Point| { if p.x > q.x { p } else { q.clone() } })));
-       
  
   let t_line = Line { u: most_left.clone(), v: most_right.clone() };
   let b_line = Line { u: most_right.clone(), v: most_left.clone() };
@@ -199,6 +200,7 @@ fn quickhull
   let hull = L::art(cell(nb.clone(), hull));
   let hull = L::name(nb.clone(), hull);
   let hull = ns(nb.clone(),||quickhull_rec_2(nb, b_line, b_points, hull));
+
   let hull = L::cons(Shape::Point(most_right), hull);
   let hull = L::art(cell(nt.clone(), hull));
   let hull = L::name(nt.clone(), hull);
@@ -278,7 +280,7 @@ pub fn test_qh () {
 pub fn test_qh_inc () {
   
   fn push_point(l:List<Point>) -> List<Point> {
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:10,y:3}, l);   // on hull !!
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:20,y:20}, l);   // on hull !!
     let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(666), l); // UNIQUE NAME!
     l
   };
