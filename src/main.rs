@@ -10,74 +10,73 @@ use adapton::engine::*;
 use adapton::macros::*;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-struct Point {
-	x: isize,
-	y: isize,
+pub struct Point {
+  x: isize,
+  y: isize,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-struct Line {
-	u: Point,
-	v: Point,
+pub struct Line {
+  u: Point,
+  v: Point,
 }
 
 
 // Point operation functions
-fn point_subtract<'a>(u: &'a Point, v: &'a Point) -> Point {
-	// Finds the difference between u and v
-	Point { x: u.x - v.x, y: u.y - v.y}
+pub fn point_subtract<'a>(u: &'a Point, v: &'a Point) -> Point {
+  // Finds the difference between u and v
+  Point { x: u.x - v.x, y: u.y - v.y}
 }
 
-fn magnitude(pt: &Point) -> f32 {
-	// Finds the magnitude of position vector for pt
-	(((pt.x * pt.x) + (pt.y * pt.y)) as f32).sqrt()
+pub fn magnitude(pt: &Point) -> f32 {
+  // Finds the magnitude of position vector for pt
+  (((pt.x * pt.x) + (pt.y * pt.y)) as f32).sqrt()
 }
 
-fn cross_prod(u: &Point, v: &Point) -> isize {
-	// The corss product of points u and v
-	(u.x * v.y) - (u.y * v.x)
+pub fn cross_prod(u: &Point, v: &Point) -> isize {
+  // The corss product of points u and v
+  (u.x * v.y) - (u.y * v.x)
 }
 
-fn point_dist(u: &Point, v: &Point) -> f32 {
-	// Distance between points u and v
-	(((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)) as f32).sqrt()
+pub fn point_dist(u: &Point, v: &Point) -> f32 {
+  // Distance between points u and v
+  (((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)) as f32).sqrt()
 }
 
-fn line_point_dist(l: &Line, p: &Point) -> f32 {
-	let d1 = point_subtract(&l.v, &l.u);
-	let d2 = point_subtract(&l.u, &p);
-	let d3 = point_subtract(&l.v, &l.u);
-
-	((cross_prod(&d1, &d2) as f32) / magnitude(&d3)).abs()
+pub fn line_point_dist(l: &Line, p: &Point) -> f32 {
+  let d1 = point_subtract(&l.v, &l.u);
+  let d2 = point_subtract(&l.u, &p);
+  let d3 = point_subtract(&l.v, &l.u);  
+  ((cross_prod(&d1, &d2) as f32) / magnitude(&d3)).abs()
 }
 
-fn line_side_test(l: &Line, p: &Point) -> bool {
-	// Tests which side of the line a point is on
-	if (l.u == *p) || (l.v == *p) {
-		false
-	} else {
-		let d1 = point_subtract(&l.v, &l.u);
-		let d2 = point_subtract(&l.u, &p);
-		let c = cross_prod(&d1, &d2);
-		if c <= 0 {
-			false
-		} else {
-			true
-		}
-	}
+pub fn line_side_test(l: &Line, p: &Point) -> bool {
+  // Tests which side of the line a point is on
+  if (l.u == *p) || (l.v == *p) {
+    false
+  } else {
+    let d1 = point_subtract(&l.v, &l.u);
+    let d2 = point_subtract(&l.u, &p);
+    let c = cross_prod(&d1, &d2);
+    if c <= 0 {
+      false
+    } else {
+      true
+    }
+  }
 }
 
-fn max_point_from_line<'a>(l: &'a Line, u: &'a Point, v: &'a Point) -> (bool, &'a Point) {
-	let d1 = line_point_dist(&l, &u);
-	let d2 = line_point_dist(&l, &v);
-	if d1 > d2 {
-		(true, u)
-	} else {
-		(false, v)
-	}
+pub fn max_point_from_line<'a>(l: &'a Line, u: &'a Point, v: &'a Point) -> (bool, &'a Point) {
+  let d1 = line_point_dist(&l, &u);
+  let d2 = line_point_dist(&l, &v);
+  if d1 > d2 {
+    (true, u)
+  } else {
+    (false, v)
+  }
 }
 
-fn furthest_point_from_line<Lev:Level, T:TreeElim<Lev,Point>+'static>
+pub fn furthest_point_from_line<Lev:Level, T:TreeElim<Lev,Point>+'static>
   (l: Line, points: T) -> Point
 {
   monoid_of_tree
@@ -90,10 +89,13 @@ fn furthest_point_from_line<Lev:Level, T:TreeElim<Lev,Point>+'static>
 }
 
 #[derive(Clone,Hash,Eq,PartialEq,Debug)]
-enum Shape {
+pub enum Shape {
   Point(Point),
   Line(Line),
 }
+
+pub fn name_of_point (p:&Point) -> Name { name_pair(name_of_isize( p.x), name_of_isize( p.y)) }
+pub fn name_of_line  (l:&Line)  -> Name { name_pair(name_of_point(&l.u), name_of_point(&l.v)) }
 
 fn quickhull_rec
   < Lev:Level+'static
@@ -104,32 +106,25 @@ fn quickhull_rec
 {
   if T::is_empty(&points) { hull }
   else {
-    // TODO name of line l
-    let (l_line, l_points, mid, r_line, r_points) = ns(name_of_usize(0), || {
-      let mid =
-        ns(name_of_str("find-mid"),
-           || furthest_point_from_line(l.clone(), points.clone()));
-      
+    let mid =
+      ns(name_of_line(&l),
+         || furthest_point_from_line(l.clone(), points.clone()));
+    
       let l_line = Line { u: l.u.clone(), v: mid.clone() };
       let r_line = Line { u: mid.clone(), v: l.v.clone() };
-      
-      let l_line2 = l_line.clone();
-      let l_points =
-        ns(name_of_str("filter-l"),
-           ||filter_tree_of_tree::<_,_,_,T>
-           (points.clone(), Box::new(move |p| line_side_test(&l_line2, &p) )));
-      
-      let r_line2 = r_line.clone();
-      let r_points =
-        ns(name_of_str("filter-r"),
-           ||filter_tree_of_tree::<_,_,_,T>
-           (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
-
-      (l_line, l_points,
-       mid,
-       r_line, r_points)
-    });
-
+    
+    let l_line2 = l_line.clone();
+    let l_points =
+      ns(name_of_line(&l_line2),
+         ||filter_tree_of_tree::<_,_,_,T>
+         (points.clone(), Box::new(move |p| line_side_test(&l_line2, &p) )));
+    
+    let r_line2 = r_line.clone();
+    let r_points =
+      ns(name_of_line(&r_line2),
+         ||filter_tree_of_tree::<_,_,_,T>
+         (points.clone(), Box::new(move |p| line_side_test(&r_line2, &p) )));
+    
     let (nr, nl) = name_fork(n);
     //let hull = L::cons(Shape::Line(r_line.clone()), hull);
     let hull = ns(nr.clone(), ||(quickhull_rec_2(nr, r_line, r_points, hull)));
@@ -193,13 +188,13 @@ fn quickhull
   
   let t_line2 = t_line.clone();
   let t_points =
-    ns(name_pair(name_of_str("t-points"), name_of_usize(0)), // TODO name of t_line2
+    ns(name_of_line(&t_line2),
        || filter_tree_of_tree::<_,_,_,T>
        (points.clone(), Box::new(move |p| line_side_test(&t_line2, &p) )));
   
   let b_line2 = b_line.clone();
   let b_points =
-    ns(name_pair(name_of_str("b-points"), name_of_usize(0)), // TODO name of b_line2
+    ns(name_of_line(&b_line2),
        || filter_tree_of_tree::<_,_,_,T>
        (points.clone(), Box::new(move |p| line_side_test(&b_line2, &p) )));
 
