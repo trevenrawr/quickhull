@@ -4,10 +4,15 @@ use std::rc::Rc;
 
 #[macro_use]
 extern crate adapton;
+extern crate time;
+extern crate rand;
+extern crate csv;
 
 use adapton::collections::*;
 use adapton::engine::*;
 use adapton::macros::*;
+use rand::*;
+use csv::Writer;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Point {
@@ -150,14 +155,6 @@ fn quickhull_rec_2
   L::art(c)
 }
 
-// // TODO: Use this to time quickhull:
-// // pub fn measure_ns<F:FnOnce()>(f: F) -> u64 {
-// //   let start = time::precise_time_ns();
-// //   f();
-// //   let end = time::precise_time_ns();
-// //   end - start
-// // }
-
 fn quickhull
   < Lev:Level+'static
   , T:TreeIntro<Lev,Point>+TreeElim<Lev,Point>+'static
@@ -210,51 +207,20 @@ fn quickhull
   hull
 }
 
+
 fn test_input() -> List<Point> {
   list_of_vec::<Point,List<_>>( &vec![
-    // NameElse::Name(name_of_usize(0)),  NameElse::Else(Point{x: 2,y: 2}), // inside
-    // NameElse::Name(name_of_usize(1)),  NameElse::Else(Point{x: 2,y:-2}), // inside
-    // NameElse::Name(name_of_usize(2)),  NameElse::Else(Point{x:-2,y:-2}), // inside
-    // NameElse::Name(name_of_usize(3)),  NameElse::Else(Point{x:-2,y: 2}), // inside
-    
-    
-    // NameElse::Name(name_of_usize(8)),  NameElse::Else(Point{x: 5,y: 5}), // inside
-    // NameElse::Name(name_of_usize(9)),  NameElse::Else(Point{x: 5,y:-5}), // inside
-    // NameElse::Name(name_of_usize(10)),  NameElse::Else(Point{x:-5,y:-5}), // inside
-    // NameElse::Name(name_of_usize(11)),  NameElse::Else(Point{x:-5,y: 5}), // inside
-    
-    // NameElse::Name(name_of_usize(12)),  NameElse::Else(Point{x: 4,y: 4}), // inside
-    // NameElse::Name(name_of_usize(13)),  NameElse::Else(Point{x: 4,y:-4}), // inside
-    // NameElse::Name(name_of_usize(14)),  NameElse::Else(Point{x:-4,y:-4}), // inside
-    // NameElse::Name(name_of_usize(15)),  NameElse::Else(Point{x:-4,y: 4}), // inside
-    
-    // NameElse::Name(name_of_usize(16)),  NameElse::Else(Point{x: 3,y: 3}), // inside
-    // NameElse::Name(name_of_usize(17)),  NameElse::Else(Point{x: 3,y:-3}), // inside
-    // NameElse::Name(name_of_usize(18)),  NameElse::Else(Point{x:-3,y:-3}), // inside
-    // NameElse::Name(name_of_usize(19)),  NameElse::Else(Point{x:-3,y: 3}), // inside
-    
-    // NameElse::Name(name_of_usize(20)),  NameElse::Else(Point{x:1,y:1}), // inside
-    // NameElse::Name(name_of_usize(21)),  NameElse::Else(Point{x:3,y:0}), // inside
-    // NameElse::Name(name_of_usize(22)), NameElse::Else(Point{x:0,y:3}), // inside
-    // NameElse::Name(name_of_usize(23)), NameElse::Else(Point{x:5,y:3}), // inside
-    // NameElse::Name(name_of_usize(24)), NameElse::Else(Point{x:5,y:5}), // inside
-
     NameElse::Name(name_of_usize(4)),  NameElse::Else(Point{x: 6,y: 6}), // on hull
     NameElse::Name(name_of_usize(5)),  NameElse::Else(Point{x: 6,y:-6}), // on hull
     NameElse::Name(name_of_usize(6)),  NameElse::Else(Point{x:-6,y:-6}), // on hull
     NameElse::Name(name_of_usize(7)),  NameElse::Else(Point{x:-6,y: 6}), // on hull
     
-    NameElse::Name(name_of_usize(25)), NameElse::Else(Point{x:10,y:0}),  // on hull
-    NameElse::Name(name_of_usize(26)), NameElse::Else(Point{x:0,y:10}),  // on hull
-    NameElse::Name(name_of_usize(27)), NameElse::Else(Point{x:-10,y:0}), // on hull
-    NameElse::Name(name_of_usize(28)), NameElse::Else(Point{x:0,y:-10}), // on hull
+    NameElse::Name(name_of_usize(14)), NameElse::Else(Point{x:10,y:0}),  // on hull
+    NameElse::Name(name_of_usize(15)), NameElse::Else(Point{x:0,y:10}),  // on hull
+    NameElse::Name(name_of_usize(16)), NameElse::Else(Point{x:-10,y:0}), // on hull
+    NameElse::Name(name_of_usize(17)), NameElse::Else(Point{x:0,y:-10}), // on hull
     
-    // NameElse::Name(name_of_usize(29)), NameElse::Else(Point{x:10,y:2}),  // on hull
-    // NameElse::Name(name_of_usize(30)), NameElse::Else(Point{x:2,y:10}),  // on hull
-    // NameElse::Name(name_of_usize(31)), NameElse::Else(Point{x:-10,y:2}), // on hull
-    // NameElse::Name(name_of_usize(32)), NameElse::Else(Point{x:2,y:-10}), // on hull
-    
-    NameElse::Name(name_of_usize(33)),
+    // NameElse::Name(name_of_usize(33)),
     ])
 }
 
@@ -267,7 +233,7 @@ pub fn test_qh () {
     let h = ns(name_of_str("quickhull"),
                ||quickhull::<_,_,List<_>>(t.clone()));
     let o = vec_of_list(h, None);
-    println!("{:?}", &o);
+    // println!("{:?}", &o);
     o
   }
   init_naive();
@@ -281,16 +247,13 @@ pub fn test_qh () {
 
 #[test]
 pub fn test_qh_inc () {
-  
-  fn push_point(l:List<Point>) -> List<Point> {
-    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x: 20,y:20},  l); // new hull
-    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(222), l); // 
-    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:20},  l); // new hull
-    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(333), l); // 
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{x:0,y:0},  l); // new hull
-    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(444), l); // 
-    // let l = <List<Point> as ListIntro<Point>>::cons(Point{x:-20,y:-20}, l); // new hull
-    // let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(555), l); // 
+  fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
+    let x_pt = rand::thread_rng().gen_range(-limit, limit);
+    let y_pt = rand::thread_rng().gen_range(-limit, limit);
+
+    let l = <List<Point> as ListIntro<Point>>::art(cell(name_of_usize(name), l));
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(name), l);
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{ x: x_pt, y: y_pt },  l);
     l
   };
   
@@ -300,7 +263,7 @@ pub fn test_qh_inc () {
     let h = ns(name_of_str("quickhull"),
                ||quickhull::<_,_,List<_>>(t.clone()));
     let o = vec_of_list(h, None);
-    println!("hull = {:?}\n", &o);
+    // println!("hull = {:?}\n", &o);
     o
   };
 
@@ -308,20 +271,110 @@ pub fn test_qh_inc () {
   init_naive();
   let inp      = test_input();
   let naive_o1 = doit(inp.clone());
-  let inp      = push_point(inp);
-  let naive_o2 = doit(inp);
+  let inp2      = push_point(10, 333, inp.clone());
+  let naive_o2 = doit(inp2.clone());
 
   println!("DCG run");
   init_dcg();
-  let inp    = test_input();
-  let dcg_o1 = doit(inp.clone());
-  let inp    = push_point(inp);
-  let dcg_o2 = doit(inp);
+  let dcg_o1 = doit(inp);
+  let dcg_o2 = doit(inp2);
 
   assert_eq!(naive_o1, dcg_o1);
   assert_eq!(naive_o2, dcg_o2);  
 }
 
+#[test]
+pub fn rh_test() {
+  runtime_harness(100, 2);
+}
+
+
+fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> {
+  // We start with 10 random points, so max size has to be bigger than that!
+  assert!(max_n > 11);
+
+  fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
+    let x_pt = rand::thread_rng().gen_range(-limit, limit);
+    let y_pt = rand::thread_rng().gen_range(-limit, limit);
+
+    let l = <List<Point> as ListIntro<Point>>::art(cell(name_of_usize(name), l));
+    let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(name), l);
+    let l = <List<Point> as ListIntro<Point>>::cons(Point{ x: x_pt, y: y_pt },  l);
+    l
+  };
+  
+  // The code that we want to compare/measure under naive versus DCG engines:
+  fn doit(l:List<Point>) -> Vec<NameElse<Shape>> {
+    let t = ns(name_of_str("tree_of_list"),
+               ||tree_of_list::<_,_,Tree<_>,_>(Dir2::Right, l));
+    let h = ns(name_of_str("quickhull"),
+               ||quickhull::<_,_,List<_>>(t));
+    vec_of_list(h, None)
+  };
+  
+  // Initialize the input list with ten random points.
+  let mut input: List<Point> = List::nil();
+  for jj in 0..10 {
+    input = push_point(10, jj, input);
+  }
+
+  let mut runtimes: Vec<(usize, u64, u64)> = vec![];
+  
+  init_dcg(); // Initialize the current engine with an empty DCG instance
+  let mut dcg = init_naive(); // Current engine is naive; save DCG for later
+  
+  let the_end: usize = (max_n - 10) / pts_per_step + 1;
+  for ii in 1..the_end {
+    let n: usize = (ii * pts_per_step) + 10;
+    // if n % 100 < pts_per_step {
+      println!("Running n = {}", n);
+    // }
+
+    let limit = 100; // (n as f64 / 0.01).sqrt() as isize;
+    // println!("limit is {}.", limit);
+
+    // Push more points
+    for jj in 0..pts_per_step {
+      input = push_point(limit, n + jj, input);
+    }
+
+    // assert!(engine_is_naive()); // Sanity check
+
+    let naive_start = time::precise_time_ns();
+    let naive_out = doit(input.clone()); // MEASURE ME!
+    let naive_end = time::precise_time_ns();
+
+    init_engine(dcg); // Switch to (saved) DCG engine    
+    // assert!(engine_is_dcg()); // Sanity check
+
+    let dcg_start = time::precise_time_ns();
+    let dcg_out = doit(input.clone()); // MEASURE ME!
+    let dcg_end = time::precise_time_ns();
+
+    dcg = init_naive(); // Switch back to naive; save DCG engine for later
+
+    // Log the times for this run
+    runtimes.push((n, naive_end - naive_start, dcg_end - dcg_start));
+
+    assert_eq!(naive_out, dcg_out); // Sanity check
+  }
+
+  runtimes
+}
 
 fn main() {
+  let b_start = time::precise_time_ns();
+
+  let runtimes = runtime_harness(100, 1);
+
+  let b_end = time::precise_time_ns();
+
+  let path = "quickhull_runtimes.csv";
+  let mut writer = Writer::from_file(path).unwrap();
+  for r in runtimes.into_iter() {
+    writer.encode(r).ok().expect("CSV writer error");
+  }
+
+  println!("Quickhull runtimes analysis ran in {} seconds", (b_end - b_start) / 1000000000);
+
 }

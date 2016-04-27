@@ -3,9 +3,10 @@ name = "quickhull"
 version = "0.1.0"
 authors = ["Trevor"]
 
-#[dependencies.funlist]
-#git = "https://github.com/cuplv/funlist.rs"
-#path = "src/funlist.rs/"
+[dependencies]
+time = "0.1.35"
+rand = "0.3.14"
+csv = "0.14.4"
 
 [dependencies.adapton]
 git = "https://github.com/cuplv/adapton.rust"
