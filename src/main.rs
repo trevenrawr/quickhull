@@ -1,45 +1,56 @@
 #![allow(dead_code)]
 
 extern crate funlist;
+extern crate time;
+extern crate rand;
+extern crate csv;
 
 use funlist::*;
+use rand::*;
+use csv::*;
 //use std::num;
 
 #[derive(Clone, PartialEq)]
 struct Point {
-	x: f32,
-	y: f32,
+	x: f64,
+	y: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct Line {
 	u: Point,
 	v: Point,
 }
 
+#[derive(Clone, PartialEq)]
+enum Shape {
+  Point(Point),
+  Line(Line),
+}
+
 
 // Point operation functions
 fn point_subtract<'a>(u: &'a Point, v: &'a Point) -> Point {
-	// Finds the difference between u and v
-	Point { x: u.x - v.x, y: u.y - v.y}
+	// Finds the vector from v to u
+	Point { x: u.x - v.x, y: u.y - v.y }
 }
 
-fn magnitude(pt: &Point) -> f32 {
+fn magnitude(pt: &Point) -> f64 {
 	// Finds the magnitude of position vector for pt
 	((pt.x * pt.x) + (pt.y * pt.y)).sqrt()
 }
 
-fn cross_prod(u: &Point, v: &Point) -> f32 {
+fn cross_prod(u: &Point, v: &Point) -> f64 {
 	// The corss product of points u and v
 	(u.x * v.y) - (u.y * v.x)
 }
 
-fn point_dist(u: &Point, v: &Point) -> f32 {
+fn point_dist(u: &Point, v: &Point) -> f64 {
 	// Distance between points u and v
 	((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)).sqrt()
 }
 
-fn line_point_dist(l: &Line, p: &Point) -> f32 {
+fn line_point_dist(l: &Line, p: &Point) -> f64 {
 	let d1 = point_subtract(&l.v, &l.u);
 	let d2 = point_subtract(&l.u, &p);
 	let d3 = point_subtract(&l.v, &l.u);
@@ -73,7 +84,7 @@ fn max_point_from_line<'a>(l: &'a Line, u: &'a Point, v: &'a Point) -> (bool, &'
 	}
 }
 
-fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point, f32) {
+fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point, f64) {
   match *points {
     List::Nil =>
       panic!{"Can't do quickhull on no points! (furthest_point_from_line received empty point list)"},
@@ -88,11 +99,6 @@ fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point,
       })
     }
   }
-}
-
-enum Shape {
-  Point(Point),
-  Line(Line),
 }
 
 fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Shape>) -> List<Shape> {
@@ -116,14 +122,6 @@ fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Shap
     }
   }
 }
-
-// TODO: Use this to time quickhull:
-// pub fn measure_ns<F:FnOnce()>(f: F) -> u64 {
-//   let start = time::precise_time_ns();
-//   f();
-//   let end = time::precise_time_ns();
-//   end - start
-// }
 
 fn quickhull<'a>(points: &'a List<Point>) -> List<Shape> {
   let most_left = fold(&points, Point { x: 0., y: 0. }, |p, q| {
@@ -195,6 +193,68 @@ fn test_qh() {
   assert!(compare(&points, &ans));
 }
 
+// Runtime investigation
+fn random_points(n: usize, limit: f64, accum: List<Point>) -> List<Point> {
+  if n == 0 {
+    accum
+  } else {
+    let x_pt = rand::thread_rng().gen_range(-limit, limit);
+    let y_pt = rand::thread_rng().gen_range(-limit, limit);
+    let accum = push(accum, Point { x: x_pt, y: y_pt });
+
+    return random_points(n-1, limit, accum);
+  }
+}
+
+
+fn measure_runtimes(per_n_iters: u64, max_n: usize) -> Vec<u64> {
+  // Measures quickhull's performance at different input sizes.
+  // The domain size for generating random points grows with n such that the
+  // average density of points remains constant
+
+  // per_n_iters: how many different inputs to run and average runtimes on
+  // max_n: largest size of input
+
+  let mut runtimes: Vec<u64> = vec![0; (max_n - 10)];
+
+  for n in 11..(max_n + 1) {
+    let mut runtime: u64 = 0;
+    let limit: f64 = (n as f64 / 0.01).sqrt();
+
+    for _ in 0..per_n_iters {
+      let points = random_points(n, limit, List::Nil);
+
+      let start = time::precise_time_ns();
+      quickhull(&points);
+      let end = time::precise_time_ns();
+
+      runtime = runtime + (end - start);
+    }
+
+    runtimes[n-11] = runtime / per_n_iters;
+
+    if n % 100 == 0 {
+      println!("Running n = {}", n);
+    }
+  }
+
+  runtimes
+}
+
 
 fn main() {
+  let b_start = time::precise_time_ns();
+
+  let runtimes = measure_runtimes(10, 1000);
+
+  let b_end = time::precise_time_ns();
+
+  let path = "quickhull_runtimes.csv";
+  let mut writer = Writer::from_file(path).unwrap();
+  for r in runtimes.into_iter() {
+    writer.encode(r).ok().expect("CSV writer error");
+  }
+
+  println!("Quickhull runtimes analysis ran in {} seconds", (b_end - b_start) / 1000000000);
+
 }
