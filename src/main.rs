@@ -293,6 +293,7 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
   // We start with 10 random points, so max size has to be bigger than that!
   assert!(max_n > 11);
 
+  // Push a random point (in a square from -limit to limit) onto the list.
   fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
     let x_pt = rand::thread_rng().gen_range(-limit, limit);
     let y_pt = rand::thread_rng().gen_range(-limit, limit);
@@ -318,6 +319,7 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
     input = push_point(10, jj, input);
   }
 
+  // Initialize a vector to store (n, naive_time, DCG_time) for each iteration
   let mut runtimes: Vec<(usize, u64, u64)> = vec![];
   
   init_dcg(); // Initialize the current engine with an empty DCG instance
@@ -356,7 +358,7 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
     // Log the times for this run
     runtimes.push((n, naive_end - naive_start, dcg_end - dcg_start));
 
-    assert_eq!(naive_out, dcg_out); // Sanity check
+    assert_eq!(naive_out, dcg_out); // (A very important) sanity check
   }
 
   runtimes
@@ -365,16 +367,19 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
 fn main() {
   let b_start = time::precise_time_ns();
 
+  // Run the testing harness with (max_n, step_size)
   let runtimes = runtime_harness(100, 1);
 
   let b_end = time::precise_time_ns();
 
+  // Write the runtimes to a csv for plottage.
   let path = "quickhull_runtimes.csv";
   let mut writer = Writer::from_file(path).unwrap();
   for r in runtimes.into_iter() {
     writer.encode(r).ok().expect("CSV writer error");
   }
 
+  // So I know how long my computer was busy, in case I fall asleep while it's running.
   println!("Quickhull runtimes analysis ran in {} seconds", (b_end - b_start) / 1000000000);
 
 }
