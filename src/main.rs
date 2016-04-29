@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+// $env:ADAPTON_STRUCTURAL=1
+
 use std::rc::Rc;  
 
 #[macro_use]
@@ -7,6 +9,8 @@ extern crate adapton;
 extern crate time;
 extern crate rand;
 extern crate csv;
+#[macro_use]
+extern crate clap;
 
 use adapton::collections::*;
 use adapton::engine::*;
@@ -215,10 +219,10 @@ fn test_input() -> List<Point> {
     NameElse::Name(name_of_usize(6)),  NameElse::Else(Point{x:-6,y:-6}), // on hull
     NameElse::Name(name_of_usize(7)),  NameElse::Else(Point{x:-6,y: 6}), // on hull
     
-    NameElse::Name(name_of_usize(14)), NameElse::Else(Point{x:10,y:0}),  // on hull
-    NameElse::Name(name_of_usize(15)), NameElse::Else(Point{x:0,y:10}),  // on hull
-    NameElse::Name(name_of_usize(16)), NameElse::Else(Point{x:-10,y:0}), // on hull
-    NameElse::Name(name_of_usize(17)), NameElse::Else(Point{x:0,y:-10}), // on hull
+    NameElse::Name(name_of_usize(14)), NameElse::Else(Point{x:6,y:6}),  // on hull
+    NameElse::Name(name_of_usize(15)), NameElse::Else(Point{x:-6,y:-6}),  // on hull
+    NameElse::Name(name_of_usize(16)), NameElse::Else(Point{x:6,y:6}), // on hull
+    NameElse::Name(name_of_usize(17)), NameElse::Else(Point{x:6,y:-6}), // on hull
     
     // NameElse::Name(name_of_usize(33)),
     ])
@@ -285,7 +289,7 @@ pub fn test_qh_inc () {
 
 #[test]
 pub fn rh_test() {
-  runtime_harness(100, 2);
+  runtime_harness(100, 5);
 }
 
 
@@ -295,6 +299,7 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
 
   // Push a random point (in a square from -limit to limit) onto the list.
   fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
+    // println!("Creating a point with name {}", name);
     let x_pt = rand::thread_rng().gen_range(-limit, limit);
     let y_pt = rand::thread_rng().gen_range(-limit, limit);
 
@@ -328,9 +333,9 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
   let the_end: usize = (max_n - 10) / pts_per_step + 1;
   for ii in 1..the_end {
     let n: usize = (ii * pts_per_step) + 10;
-    // if n % 100 < pts_per_step {
+    if n % 100 < pts_per_step {
       println!("Running n = {}", n);
-    // }
+    }
 
     let limit = 100; // (n as f64 / 0.01).sqrt() as isize;
     // println!("limit is {}.", limit);
@@ -340,14 +345,14 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
       input = push_point(limit, n + jj, input);
     }
 
-    // assert!(engine_is_naive()); // Sanity check
+    assert!(engine_is_naive()); // Sanity check
 
     let naive_start = time::precise_time_ns();
     let naive_out = doit(input.clone()); // MEASURE ME!
     let naive_end = time::precise_time_ns();
 
     init_engine(dcg); // Switch to (saved) DCG engine    
-    // assert!(engine_is_dcg()); // Sanity check
+    assert!(engine_is_dcg()); // Sanity check
 
     let dcg_start = time::precise_time_ns();
     let dcg_out = doit(input.clone()); // MEASURE ME!
@@ -364,16 +369,16 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
   runtimes
 }
 
-fn main() {
+fn main2(max_n: usize, step_size: usize) {
   let b_start = time::precise_time_ns();
 
   // Run the testing harness with (max_n, step_size)
-  let runtimes = runtime_harness(100, 1);
+  let runtimes = runtime_harness(max_n, step_size);
 
   let b_end = time::precise_time_ns();
 
   // Write the runtimes to a csv for plottage.
-  let path = "quickhull_runtimes.csv";
+  let path = format!("qh_runtime_n{}_s{}.csv", max_n, step_size);
   let mut writer = Writer::from_file(path).unwrap();
   for r in runtimes.into_iter() {
     writer.encode(r).ok().expect("CSV writer error");
@@ -382,4 +387,25 @@ fn main() {
   // So I know how long my computer was busy, in case I fall asleep while it's running.
   println!("Quickhull runtimes analysis ran in {} seconds", (b_end - b_start) / 1000000000);
 
+}
+
+fn main() {
+  // Command line arguments
+  let args = clap::App::new("Quickhull")
+    .version("0.1")
+    .author("Trevor DiMartino")
+    .about("Quickhull, both traditional and incremental")
+    .args_from_usage("\
+      -n --maxn=[max_n]            'maximum points to run'
+      -s --stepsize=[step_size]    'points to add between runs' ")
+    .get_matches();
+
+  let max_n = value_t!(args.value_of("maxn"), usize).unwrap_or(1000);
+  let step_size = value_t!(args.value_of("stepsize"), usize).unwrap_or(1);
+
+  use std::thread;
+  //use std::thread::JoinHandle;
+  let child =
+    thread::Builder::new().stack_size(64 * 1024 * 1024).spawn(move || { main2(max_n, step_size) });
+  let _ = child.unwrap().join();
 }
