@@ -116,7 +116,7 @@ fn quickhull_rec
   if T::is_empty(&points) { hull }
   else {
     let mid =
-      ns(name_of_line(&l),
+      ns(name_pair(name_of_str("mid"),name_of_line(&l)),
          || furthest_point_from_line(l.clone(), points.clone()));
     
       let l_line = Line { u: l.u.clone(), v: mid.clone() };
