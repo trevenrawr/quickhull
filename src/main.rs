@@ -251,13 +251,18 @@ pub fn test_qh () {
 
 #[test]
 pub fn test_qh_inc () {
-  fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
+  // Generate a random point (in a square from -limit to limit)
+  fn gen_point(limit: isize) -> Point {
     let x_pt = rand::thread_rng().gen_range(-limit, limit);
     let y_pt = rand::thread_rng().gen_range(-limit, limit);
 
+    Point{ x: x_pt, y: y_pt }
+  };
+
+  fn push_point(name: usize, pt: Point, l: List<Point>) -> List<Point> {
     let l = <List<Point> as ListIntro<Point>>::art(cell(name_of_usize(name), l));
     let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(name), l);
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{ x: x_pt, y: y_pt },  l);
+    let l = <List<Point> as ListIntro<Point>>::cons(pt,  l);
     l
   };
   
@@ -271,17 +276,21 @@ pub fn test_qh_inc () {
     o
   };
 
+  let new_point = gen_point(10);
+
   println!("Naive run");
   init_naive();
   let inp      = test_input();
   let naive_o1 = doit(inp.clone());
-  let inp2      = push_point(10, 333, inp.clone());
-  let naive_o2 = doit(inp2.clone());
+  let inp      = push_point(333, new_point.clone(), inp);
+  let naive_o2 = doit(inp);
 
   println!("DCG run");
   init_dcg();
-  let dcg_o1 = doit(inp);
-  let dcg_o2 = doit(inp2);
+  let inp     = test_input();
+  let dcg_o1  = doit(inp.clone());
+  let inp     = push_point(333, new_point.clone(), inp);
+  let dcg_o2  = doit(inp);
 
   assert_eq!(naive_o1, dcg_o1);
   assert_eq!(naive_o2, dcg_o2);  
@@ -297,15 +306,18 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
   // We start with 10 random points, so max size has to be bigger than that!
   assert!(max_n > 11);
 
-  // Push a random point (in a square from -limit to limit) onto the list.
-  fn push_point(limit: isize, name: usize, l: List<Point>) -> List<Point> {
-    // println!("Creating a point with name {}", name);
+  // Generate a random point (in a square from -limit to limit)
+  fn gen_point(limit: isize) -> Point {
     let x_pt = rand::thread_rng().gen_range(-limit, limit);
     let y_pt = rand::thread_rng().gen_range(-limit, limit);
 
+    Point{ x: x_pt, y: y_pt }
+  };
+
+  fn push_point(name: usize, pt: Point, l: List<Point>) -> List<Point> {
     let l = <List<Point> as ListIntro<Point>>::art(cell(name_of_usize(name), l));
     let l = <List<Point> as ListIntro<Point>>::name(name_of_usize(name), l);
-    let l = <List<Point> as ListIntro<Point>>::cons(Point{ x: x_pt, y: y_pt },  l);
+    let l = <List<Point> as ListIntro<Point>>::cons(pt,  l);
     l
   };
   
@@ -317,18 +329,31 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
                ||quickhull::<_,_,List<_>>(t));
     vec_of_list(h, None)
   };
-  
-  // Initialize the input list with ten random points.
-  let mut input: List<Point> = List::nil();
-  for jj in 0..10 {
-    input = push_point(10, jj, input);
-  }
 
   // Initialize a vector to store (n, naive_time, DCG_time) for each iteration
   let mut runtimes: Vec<(usize, u64, u64)> = vec![];
   
-  init_dcg(); // Initialize the current engine with an empty DCG instance
-  let mut dcg = init_naive(); // Current engine is naive; save DCG for later
+  // Initialize input lists
+  let mut dcg_input: List<Point> = List::nil();
+  let mut naive_input: List<Point> = List::nil();
+
+  // Generate a vector of points to push to each input
+  let mut new_points: Vec<Point> = vec![];
+  for _ in 0..10 { new_points.push(gen_point(10)); }
+
+  // Initialize the current engine with an empty DCG instance and push points
+  init_dcg();
+  assert!(engine_is_dcg()); // Sanity check
+  for (ii, pt) in new_points.iter().enumerate() {
+    dcg_input = push_point(ii, pt.clone(), dcg_input);
+  }
+
+  // Current engine is naive; save DCG for later, and push naive points
+  let mut dcg = init_naive();
+  assert!(engine_is_naive()); // Sanity check
+  for (ii, pt) in new_points.iter().enumerate() {
+    naive_input = push_point(ii, pt.clone(), naive_input);
+  }
   
   let the_end: usize = (max_n - 10) / pts_per_step + 1;
   for ii in 1..the_end {
@@ -337,25 +362,34 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
       println!("Running n = {}", n);
     }
 
-    let limit = 100; // (n as f64 / 0.01).sqrt() as isize;
+    let limit = 1000; // (n as f64 / 0.01).sqrt() as isize;
     // println!("limit is {}.", limit);
 
-    // Push more points
-    for jj in 0..pts_per_step {
-      input = push_point(limit, n + jj, input);
-    }
+    // Generate more points
+    let mut new_points: Vec<Point> = vec![];
+    for _ in 0..pts_per_step { new_points.push(gen_point(limit)); }
 
     assert!(engine_is_naive()); // Sanity check
+    // Push the new points to the naive list
+    for (ii, pt) in new_points.iter().enumerate() {
+      naive_input = push_point(ii + n, pt.clone(), naive_input);
+    }
 
     let naive_start = time::precise_time_ns();
-    let naive_out = doit(input.clone()); // MEASURE ME!
+    let naive_out = doit(naive_input.clone()); // MEASURE ME!
     let naive_end = time::precise_time_ns();
 
-    init_engine(dcg); // Switch to (saved) DCG engine    
+    init_engine(dcg); // Switch to (saved) DCG engine
+
+
     assert!(engine_is_dcg()); // Sanity check
+    // Push the new points to the DCG list
+    for (ii, pt) in new_points.iter().enumerate() {
+      dcg_input = push_point(ii + n, pt.clone(), dcg_input);
+    }
 
     let dcg_start = time::precise_time_ns();
-    let dcg_out = doit(input.clone()); // MEASURE ME!
+    let dcg_out = doit(dcg_input.clone()); // MEASURE ME!
     let dcg_end = time::precise_time_ns();
 
     dcg = init_naive(); // Switch back to naive; save DCG engine for later
