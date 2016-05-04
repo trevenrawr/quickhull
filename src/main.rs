@@ -302,11 +302,9 @@ pub fn rh_test() {
 }
 
 
-fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> {
+fn runtime_harness(max_n: usize, pts_per_step: usize, name_step: usize) -> Vec<(usize, u64, u64)> {
   // We start with 10 random points, so max size has to be bigger than that!
   assert!(max_n > 11);
-
-  let name_step = 2;
   
   // Generate a random point (in a square from -limit to limit)
   fn gen_point(limit: isize) -> Point {
@@ -408,16 +406,16 @@ fn runtime_harness(max_n: usize, pts_per_step: usize) -> Vec<(usize, u64, u64)> 
   runtimes
 }
 
-fn main2(max_n: usize, step_size: usize) {
+fn main2(max_n: usize, step_size: usize, name_step: usize) {
   let b_start = time::precise_time_ns();
 
   // Run the testing harness with (max_n, step_size)
-  let runtimes = runtime_harness(max_n, step_size);
+  let runtimes = runtime_harness(max_n, step_size, name_step);
 
   let b_end = time::precise_time_ns();
 
   // Write the runtimes to a csv for plottage.
-  let path = format!("qh_runtime_n{}_s{}.csv", max_n, step_size);
+  let path = format!("qh_runtime_n{}_s{}_t{}.csv", max_n, step_size, name_step);
   let mut writer = Writer::from_file(path).unwrap();
   for r in runtimes.into_iter() {
     writer.encode(r).ok().expect("CSV writer error");
@@ -436,15 +434,17 @@ fn main() {
     .about("Quickhull, both traditional and incremental")
     .args_from_usage("\
       -n --maxn=[max_n]            'maximum points to run'
-      -s --stepsize=[step_size]    'points to add between runs' ")
+      -s --stepsize=[step_size]    'points to add between runs'
+      -t --namestep=[name_step]    'points to add before naming another one' ")
     .get_matches();
 
   let max_n = value_t!(args.value_of("maxn"), usize).unwrap_or(1000);
   let step_size = value_t!(args.value_of("stepsize"), usize).unwrap_or(1);
+  let name_step = value_t!(args.value_of("namestep"), usize).unwrap_or(1);
 
   use std::thread;
   //use std::thread::JoinHandle;
   let child =
-    thread::Builder::new().stack_size(64 * 1024 * 1024).spawn(move || { main2(max_n, step_size) });
+    thread::Builder::new().stack_size(64 * 1024 * 1024).spawn(move || { main2(max_n, step_size, name_step) });
   let _ = child.unwrap().join();
 }
