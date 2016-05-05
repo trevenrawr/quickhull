@@ -4,6 +4,8 @@ extern crate funlist;
 extern crate time;
 extern crate rand;
 extern crate csv;
+#[macro_use]
+extern crate clap;
 
 use funlist::*;
 use rand::*;
@@ -12,14 +14,14 @@ use csv::*;
 
 #[derive(Clone, PartialEq)]
 struct Point {
-	x: f64,
-	y: f64,
+  x: f64,
+  y: f64,
 }
 
 #[derive(Clone, PartialEq)]
 struct Line {
-	u: Point,
-	v: Point,
+  u: Point,
+  v: Point,
 }
 
 #[derive(Clone, PartialEq)]
@@ -31,57 +33,57 @@ enum Shape {
 
 // Point operation functions
 fn point_subtract<'a>(u: &'a Point, v: &'a Point) -> Point {
-	// Finds the vector from v to u
-	Point { x: u.x - v.x, y: u.y - v.y }
+  // Finds the vector from v to u
+  Point { x: u.x - v.x, y: u.y - v.y }
 }
 
 fn magnitude(pt: &Point) -> f64 {
-	// Finds the magnitude of position vector for pt
-	((pt.x * pt.x) + (pt.y * pt.y)).sqrt()
+  // Finds the magnitude of position vector for pt
+  ((pt.x * pt.x) + (pt.y * pt.y)).sqrt()
 }
 
 fn cross_prod(u: &Point, v: &Point) -> f64 {
-	// The corss product of points u and v
-	(u.x * v.y) - (u.y * v.x)
+  // The corss product of points u and v
+  (u.x * v.y) - (u.y * v.x)
 }
 
 fn point_dist(u: &Point, v: &Point) -> f64 {
-	// Distance between points u and v
-	((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)).sqrt()
+  // Distance between points u and v
+  ((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y)).sqrt()
 }
 
 fn line_point_dist(l: &Line, p: &Point) -> f64 {
-	let d1 = point_subtract(&l.v, &l.u);
-	let d2 = point_subtract(&l.u, &p);
-	let d3 = point_subtract(&l.v, &l.u);
+  let d1 = point_subtract(&l.v, &l.u);
+  let d2 = point_subtract(&l.u, &p);
+  let d3 = point_subtract(&l.v, &l.u);
 
-	((cross_prod(&d1, &d2)) / magnitude(&d3)).abs()
+  ((cross_prod(&d1, &d2)) / magnitude(&d3)).abs()
 }
 
 fn line_side_test(l: &Line, p: &Point) -> bool {
-	// Tests which side of the line a point is on
-	if (l.u == *p) || (l.v == *p) {
-		false
-	} else {
-		let d1 = point_subtract(&l.v, &l.u);
-		let d2 = point_subtract(&l.u, &p);
-		let c = cross_prod(&d1, &d2);
-		if c <= 0.0 {
-			false
-		} else {
-			true
-		}
-	}
+  // Tests which side of the line a point is on
+  if (l.u == *p) || (l.v == *p) {
+    false
+  } else {
+    let d1 = point_subtract(&l.v, &l.u);
+    let d2 = point_subtract(&l.u, &p);
+    let c = cross_prod(&d1, &d2);
+    if c <= 0.0 {
+      false
+    } else {
+      true
+    }
+  }
 }
 
 fn max_point_from_line<'a>(l: &'a Line, u: &'a Point, v: &'a Point) -> (bool, &'a Point) {
-	let d1 = line_point_dist(&l, &u);
-	let d2 = line_point_dist(&l, &v);
-	if d1 > d2 {
-		(true, u)
-	} else {
-		(false, v)
-	}
+  let d1 = line_point_dist(&l, &u);
+  let d2 = line_point_dist(&l, &v);
+  if d1 > d2 {
+    (true, u)
+  } else {
+    (false, v)
+  }
 }
 
 fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point, f64) {
@@ -90,12 +92,12 @@ fn furthest_point_from_line<'a>(l: &'a Line, points: &'a List<Point>) -> (Point,
       panic!{"Can't do quickhull on no points! (furthest_point_from_line received empty point list)"},
     List::Cons(_) => {
       fold(&points, (l.u.clone(), 0.), |(q, max_d), p| {
-      	let d = line_point_dist(&l, &p);
-      	if d > max_d {
-      	  (p.clone(), d)
-      	} else {
-      	  (q, max_d)
-      	}
+        let d = line_point_dist(&l, &p);
+        if d > max_d {
+          (p.clone(), d)
+        } else {
+          (q, max_d)
+        }
       })
     }
   }
@@ -114,10 +116,10 @@ fn quickhull_rec<'a>(l: &'a Line, points: &'a List<Point>, hull_accum: List<Shap
       let l_points = filter(&points, |p|{ line_side_test(&l_line, &p) });
       let r_points = filter(&points, |p|{ line_side_test(&r_line, &p) });
 
-      let hull_accum = push(hull_accum,  Shape::Line(r_line.clone()));
+      let hull_accum = push(hull_accum, Shape::Line(r_line.clone()));
       let hull_accum = quickhull_rec(&r_line, &r_points, hull_accum);
       let hull_accum = push(hull_accum, Shape::Point(pivot_point.clone()));
-      let hull_accum = push(hull_accum,  Shape::Line(l_line.clone()));
+      let hull_accum = push(hull_accum, Shape::Line(l_line.clone()));
       quickhull_rec(&l_line, &l_points, hull_accum)
     }
   }
@@ -147,7 +149,7 @@ fn quickhull<'a>(points: &'a List<Point>) -> List<Shape> {
 }
 
 #[test]
-fn test() {
+fn test_fns() {
   // Testing items:
   let p = Point { x: 3., y: 4. };
   let q = Point { x: 0., y: 0. };
@@ -174,7 +176,7 @@ fn test() {
 }
 
 #[test]
-fn test_qh() {
+fn test_qh_fails() {
   let points = List::Nil;
   let points = push(points, Point { x: 0., y: 0. });
   let points = push(points, Point { x: 1., y: 0. });
@@ -182,11 +184,11 @@ fn test_qh() {
   let points = push(points, Point { x: -1., y: 0. });
   let points = push(points, Point { x: 0., y: -1. });
 
-  let ans = List::Nil;
-  let ans = push(ans, Point { x: 1., y: 0. });
-  let ans = push(ans, Point { x: 0., y: 1. });
-  let ans = push(ans, Point { x: -1., y: 0. });
-  let ans = push(ans, Point { x: 0., y: -1. });
+  let ans: List<Shape> = List::Nil;
+  let ans = push(ans, Shape::Point(Point { x: 1., y: 0. }));
+  let ans = push(ans, Shape::Point(Point { x: 0., y: 1. }));
+  let ans = push(ans, Shape::Point(Point { x: -1., y: 0. }));
+  let ans = push(ans, Shape::Point(Point { x: 0., y: -1. }));
 
   let points = quickhull(&points);
 
@@ -207,23 +209,32 @@ fn random_points(n: usize, limit: f64, accum: List<Point>) -> List<Point> {
 }
 
 
-fn measure_runtimes(per_n_iters: u64, max_n: usize) -> Vec<u64> {
+fn measure_runtimes(max_n: usize, step_size: usize, iters: usize) -> Vec<(usize, u64)> {
   // Measures quickhull's performance at different input sizes.
   // The domain size for generating random points grows with n such that the
   // average density of points remains constant
 
-  // per_n_iters: how many different inputs to run and average runtimes on
   // max_n: largest size of input
+  // step_size: how far to step n between runs
+  // iters: how many times to repeat the measurement at each step, returned runtimes are averaged
 
-  let mut runtimes: Vec<u64> = vec![0; (max_n - 10)];
+  let mut runtimes: Vec<(usize, u64)> = vec![];
+  let mut points = random_points(10, 10., List::Nil);
 
-  for n in 11..(max_n + 1) {
+  let the_end: usize = (max_n - 10) / step_size + 1;
+  for ii in 1..the_end {
+    let n: usize = (ii * step_size) + 9;
+    if n % 100 == 0 {
+      println!("Running n = {}", n);
+    }
+
     let mut runtime: u64 = 0;
-    let limit: f64 = (n as f64 / 0.01).sqrt();
+    let limit: f64 = 1000.;
 
-    for _ in 0..per_n_iters {
-      let points = random_points(n, limit, List::Nil);
+    // Add an additional point!
+    points = random_points(1, limit, points);
 
+    for _ in 0..iters {
       let start = time::precise_time_ns();
       quickhull(&points);
       let end = time::precise_time_ns();
@@ -231,30 +242,48 @@ fn measure_runtimes(per_n_iters: u64, max_n: usize) -> Vec<u64> {
       runtime = runtime + (end - start);
     }
 
-    runtimes[n-11] = runtime / per_n_iters;
-
-    if n % 100 == 0 {
-      println!("Running n = {}", n);
-    }
+    runtimes.push((n, runtime / iters as u64));
   }
 
   runtimes
 }
 
 
-fn main() {
+fn main2(max_n: usize, step_size: usize, iters: usize) {
   let b_start = time::precise_time_ns();
 
-  let runtimes = measure_runtimes(10, 1000);
+  let runtimes = measure_runtimes(max_n, step_size, iters);
 
   let b_end = time::precise_time_ns();
 
-  let path = "quickhull_runtimes.csv";
+  let path = format!("qhmin_runtime_n{}_s{}_i{}.csv", max_n, step_size, iters);
   let mut writer = Writer::from_file(path).unwrap();
   for r in runtimes.into_iter() {
     writer.encode(r).ok().expect("CSV writer error");
   }
 
   println!("Quickhull runtimes analysis ran in {} seconds", (b_end - b_start) / 1000000000);
+}
 
+
+fn main() {
+  // Command line arguments
+  let args = clap::App::new("Quickhull")
+    .version("0.1")
+    .author("Trevor DiMartino")
+    .about("Quickhull, both traditional and incremental")
+    .args_from_usage("\
+      -n --maxn=[max_n]            'maximum points to run'
+      -s --stepsize=[step_size]    'points to add between runs'
+      -i --iterations=[iters]      'number of runs at each step to average runtimes over' ")
+    .get_matches();
+
+  let max_n = value_t!(args.value_of("maxn"), usize).unwrap_or(1000);
+  let step_size = value_t!(args.value_of("stepsize"), usize).unwrap_or(1);
+  let iters = value_t!(args.value_of("iterations"), usize).unwrap_or(1);
+  use std::thread;
+  //use std::thread::JoinHandle;
+  let child =
+    thread::Builder::new().stack_size(64 * 1024 * 1024).spawn(move || { main2(max_n, step_size, iters) });
+  let _ = child.unwrap().join();
 }
